@@ -55,4 +55,16 @@ AuthHandler.get("/info", useAuth, async (req: AuthenticatedRequest, res) => {
     res.send(user);
 })
 
+AuthHandler.get('/all', useAuth, async (req: AuthenticatedRequest, res) => {
+    const user = req.user!;
+    if(!user.admin) return res.status(403).send('Access denied!');
+    return res.json(UserModel.find());
+});
+
+AuthHandler.get('/info/:id', useAuth, async (req: AuthenticatedRequest, res) => {
+    const user = req.user!;
+    if(!user.admin) return res.status(403).send('Access denied!');
+    return res.json(UserModel.find({_id: req.params.id}));
+});
+
 export { AuthHandler };
