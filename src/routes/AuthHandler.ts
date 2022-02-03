@@ -1,7 +1,7 @@
 import { compare, hash } from "bcrypt";
 import { Router } from "express";
 import { sign } from "jsonwebtoken";
-import { loginValidation, registerValidation } from "../lib/validation";
+import { authoriseValidation, loginValidation, registerValidation } from "../lib/validation";
 import { useAuth, AuthenticatedRequest } from "../middlewares/useAuth";
 import { UserModel } from "../models/User";
 
@@ -21,6 +21,7 @@ AuthHandler.post("/register", async (req, res) => {
         name: req.body.name,
         email: req.body.email,
         password: hashPassword,
+        authorisations: []
     });
 
     user.save().then((savedUser) => {
@@ -55,14 +56,40 @@ AuthHandler.get("/info", useAuth, async (req: AuthenticatedRequest, res) => {
 
 AuthHandler.get('/all', useAuth, async (req: AuthenticatedRequest, res) => {
     const user = req.user!;
-    if(!user.admin) return res.status(403).send('Access denied!');
+    if(!(user.admin || user.authorisations.includes('auth-info'))) return res.status(403).send('Access denied!');
     return res.json(UserModel.find());
 });
 
 AuthHandler.get('/info/:id', useAuth, async (req: AuthenticatedRequest, res) => {
     const user = req.user!;
-    if(!user.admin) return res.status(403).send('Access denied!');
+    if(!(user.admin || user.authorisations.includes('auth-info'))) return res.status(403).send('Access denied!');
     return res.json(UserModel.find({_id: req.params.id}));
 });
+
+AuthHandler.post('/authorise/:id', useAuth, async (req: AuthenticatedRequest, res) => {
+    const reqSender = req.user!;
+    if(!reqSender.admin) return res.status(403).send('Access denied!');
+    const { error } = authoriseValidation(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+    const user = await UserModel.findOne({_id: req.params.id});
+    if(!user) return res.status(400).send('Account does not exist!');
+    if(user.authorisations.includes(req.body.authorisation)) return res.status(400).send('User already authorised!');
+    user.authorisations.push(req.body.authorisation);
+    user.save();
+    return res.status(200).json({authorisation: req.body.authorisation});
+})
+
+AuthHandler.post('/deauthorise/:id', useAuth, async (req: AuthenticatedRequest, res) => {
+    const reqSender = req.user!;
+    if(!reqSender.admin) return res.status(403).send('Access denied!');
+    const { error } = authoriseValidation(req.body);
+    if (error) return res.status(400).send(error.details[0].message);
+    const user = await UserModel.findOne({_id: req.params.id});
+    if(!user) return res.status(400).send('Account does not exist!');
+    if(!user.authorisations.includes(req.body.authorisation)) return res.status(400).send('User not authorised!');
+    user.authorisations = user.authorisations.filter(s => s !== req.body.authorisation);
+    user.save();
+    return res.status(200).json({authorisation: req.body.authorisation});
+})
 
 export { AuthHandler };

@@ -5,7 +5,8 @@ export type User = {
     email: string,
     password: string,
     date: Date,
-    admin: boolean
+    admin: boolean,
+    authorisations: string[]
 }
 
 const userSchema = new Schema<User>({
@@ -33,8 +34,10 @@ const userSchema = new Schema<User>({
     admin: {
         type: Boolean,
         default: false
-    }
-    
+    },
+    authorisations: [{
+        type: String
+    }]
 });
 
 export const UserModel = model('User', userSchema);

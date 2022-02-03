@@ -23,3 +23,10 @@ export const infoValidation = (data: unknown) => {
     }).unknown(true);
     return schema.validate(data);
 }
+
+export const authoriseValidation = (data: unknown) => {    
+    const schema = Joi.object({
+        authorisation: Joi.string().required()
+    }).unknown(true);
+    return schema.validate(data);
+}
