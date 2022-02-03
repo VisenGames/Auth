@@ -1,7 +1,5 @@
 import { compare, hash } from "bcrypt";
-import { genSalt } from "bcrypt";
 import { Router } from "express";
-import Joi from "joi";
 import { sign } from "jsonwebtoken";
 import { loginValidation, registerValidation } from "../lib/validation";
 import { useAuth, AuthenticatedRequest } from "../middlewares/useAuth";
